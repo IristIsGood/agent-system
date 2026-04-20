@@ -3,7 +3,9 @@ Agent 相关的 API 路由
 """
 
 import logging
+import json
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from backend.models.schemas import TaskRequest, TaskResponse
 from backend.services.llm_service import LLMService
 from backend.services.tool_service import tool_service
@@ -34,28 +36,14 @@ def init_services():
 
 @router.post("/execute", response_model=TaskResponse)
 async def execute_task(request: TaskRequest):
-    """
-    执行 Agent 任务
-    
-    Args:
-        request: 任务请求 {"task": "..."}
-    
-    Returns:
-        {
-            "status": "success" 或 "failed",
-            "result": "结果",
-            "iterations": 迭代次数
-        }
-    """
-    
     if not agent_executor:
-        raise HTTPException(
-            status_code=500,
-            detail="Agent executor not initialized"
-        )
+        raise HTTPException(status_code=500, detail="Agent executor not initialized")
     
     try:
-        result = agent_executor.execute(request.task)
+        # 把历史记录转成 AI 能读的格式
+        history = [{"role": m.role, "content": m.content} for m in request.history]
+        
+        result = agent_executor.execute(request.task, history=history)
         
         return TaskResponse(
             status=result["status"],
@@ -65,10 +53,40 @@ async def execute_task(request: TaskRequest):
         
     except Exception as e:
         logger.error(f"❌ 执行任务失败: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Task execution failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Task execution failed: {str(e)}")
+
+@router.post("/stream")
+async def stream_task(request: TaskRequest):
+    if not llm_service:
+        raise HTTPException(status_code=500, detail="LLM service not initialized")
+
+    def generate():
+        # 把历史记录转成 AI 能读的格式
+        history = [{"role": m.role, "content": m.content} for m in request.history]
+
+        # 组建完整消息列表
+        messages = [
+            {
+                "role": "system",
+                "content": """你是一个智能助手 Agent。
+        你可以使用以下工具来完成任务：
+        - calculate: 进行数学计算
+        - get_weather: 查询天气
+        - search_web: 搜索网络信息
+
+        使用工具时，只需要给出工具名称和参数。
+        完成任务后，给出最终答案。"""
+            }
+        ]
+
+        messages.extend(history)
+        messages.append({"role": "user", "content": request.task})
+
+        # 流式输出每个字
+        for chunk in llm_service.chat_stream(messages):
+            yield chunk
+
+    return StreamingResponse(generate(), media_type="text/plain")
 
 
 @router.get("/tools")

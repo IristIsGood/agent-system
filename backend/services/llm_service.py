@@ -67,15 +67,18 @@ class LLMService:
         try:
             logger.info(f"📝 调用 LLM (流式)，消息数: {len(messages)}")
             
-            with self.client.chat.completions.create(
+            stream =  self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 stream=True,
                 temperature=0.7,
                 max_tokens=1000
-            ) as stream:
-                for text in stream.text_stream:
-                    yield text
+            ) 
+
+            for chunk in stream:
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    yield delta.content
                     
         except Exception as e:
             logger.error(f"❌ 流式调用失败: {str(e)}")

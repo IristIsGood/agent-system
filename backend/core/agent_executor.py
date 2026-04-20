@@ -28,7 +28,8 @@ class AgentExecutor:
         
         logger.info("✅ AgentExecutor 初始化成功")
     
-    def execute(self, user_task: str) -> Dict[str, Any]:
+
+    def execute(self, user_task: str, history: List[Dict] = []) -> Dict[str, Any]:
         """
         执行 Agent - 核心 Loop
         
@@ -61,22 +62,27 @@ class AgentExecutor:
         
         # 初始化消息列表
         messages = [
-            {
-                "role": "system",
-                "content": """你是一个智能助手 Agent。
-你可以使用以下工具来完成任务：
-- calculate: 进行数学计算
-- get_weather: 查询天气
-- search_web: 搜索网络信息
+        {
+        "role": "system",
+        "content": """你是一个智能助手 Agent。
+        你可以使用以下工具来完成任务：
+        - calculate: 进行数学计算
+        - get_weather: 查询天气
+        - search_web: 搜索网络信息
 
-使用工具时，只需要给出工具名称和参数。
-完成任务后，给出最终答案。"""
-            },
-            {
-                "role": "user",
-                "content": user_task
+        使用工具时，只需要给出工具名称和参数。
+        完成任务后，给出最终答案。"""
             }
         ]
+
+        # 加入历史记录
+        messages.extend(history)
+
+        # 加入当前任务
+        messages.append({
+            "role": "user",
+            "content": user_task
+        })
         
         # Agent Loop
         for iteration in range(self.max_iterations):

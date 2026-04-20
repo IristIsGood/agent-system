@@ -1,0 +1,62 @@
+好！流式输出的关键有3个步骤：
+
+---
+
+**第一步：后端不等结果，边生成边发送**
+
+普通方式：
+```python
+# 等 AI 全部想完，一次性返回
+response = client.chat.completions.create(...)
+return response.choices[0].message.content
+```
+
+流式方式：
+```python
+# stream=True → AI 每想一个字就立刻发出来
+stream = client.chat.completions.create(stream=True, ...)
+for chunk in stream:
+    yield chunk.choices[0].delta.content  # 每次只有一小段
+```
+
+---
+
+**第二步：后端用 `StreamingResponse` 传输**
+
+```python
+# 普通 return → 等全部完成才发
+return {"result": "..."}
+
+# StreamingResponse → 边产生边发给前端
+return StreamingResponse(generate(), media_type="text/plain")
+```
+
+---
+
+**第三步：前端用 `Reader` 一段一段接收**
+
+```javascript
+// axios.get 是等全部完成才拿到数据
+// fetch + getReader 是每收到一段就处理
+const reader = response.body.getReader()
+
+while (true) {
+  const { done, value } = await reader.read()  // 等下一段
+  if (done) break                               // 没了就结束
+  const chunk = decoder.decode(value)           // 转成文字
+  // 追加到画面上 ← 这就是打字机效果的关键
+}
+```
+
+---
+
+**总结一句话：**
+```
+后端 stream=True → yield 每个字
+        ↓
+StreamingResponse 实时传输
+        ↓
+前端 reader.read() 实时接收 → 追加到画面
+```
+
+三个环节缺一个都不行！明白了吗？有问题随时问。
