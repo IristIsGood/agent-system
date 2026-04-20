@@ -72,7 +72,7 @@ MAX_ITERATIONS=10
 
 ```bash
 cd backend
-python app/main.py
+uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000  
 ```
 
 ### 4. Run the Frontend
