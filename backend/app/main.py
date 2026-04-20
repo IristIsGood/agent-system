@@ -33,10 +33,21 @@ app.include_router(router)
 from backend.api.rag_routes import router as rag_router
 app.include_router(rag_router)
 
+# ✅ Auth 路由
+from backend.api.auth_routes import router as auth_router
+app.include_router(auth_router)
+
+# ✅ History 路由
+from backend.api.history_routes import router as history_router
+app.include_router(history_router)
+
 # ✅ Call init_services on startup
 @app.on_event("startup")
 async def startup_event():
     init_services()
+    from backend.core.database import init_db
+    init_db()
+    logger.info("✅ 数据库初始化成功")
 
 @app.get("/health")
 async def health():

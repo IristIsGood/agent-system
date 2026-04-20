@@ -132,9 +132,19 @@ def get_weather(city: str) -> str:
 
 
 def search_web(query: str) -> str:
-    """网页搜索工具（模拟）"""
-    # 这里是模拟数据，实际应该调用搜索 API
-    return f"搜索 '{query}' 的结果：\n1. 相关链接 1\n2. 相关链接 2\n3. 相关链接 3"
+    """网页搜索工具（真实）"""
+    try:
+        from duckduckgo_search import DDGS
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=3))
+        if not results:
+            return f"没有找到关于 '{query}' 的结果"
+        output = f"搜索 '{query}' 的结果：\n\n"
+        for i, r in enumerate(results, 1):
+            output += f"{i}. {r['title']}\n{r['body']}\n\n"
+        return output
+    except Exception as e:
+        return f"搜索失败: {str(e)}"
 
 
 # 创建全局工具服务实例

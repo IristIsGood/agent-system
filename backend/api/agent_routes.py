@@ -55,39 +55,81 @@ async def execute_task(request: TaskRequest):
         logger.error(f"❌ 执行任务失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Task execution failed: {str(e)}")
 
+
 @router.post("/stream")
 async def stream_task(request: TaskRequest):
-    if not llm_service:
-        raise HTTPException(status_code=500, detail="LLM service not initialized")
+    if not llm_service or not agent_executor:
+        raise HTTPException(status_code=500, detail="Services not initialized")
 
     def generate():
-        # 把历史记录转成 AI 能读的格式
         history = [{"role": m.role, "content": m.content} for m in request.history]
 
-        # 组建完整消息列表
+        # 第一步：用 AgentExecutor 执行工具调用（非流式）
+        # 但我们只跑工具部分，不要最后的回答
         messages = [
             {
                 "role": "system",
-                "content": """你是一个智能助手 Agent。
-        你可以使用以下工具来完成任务：
-        - calculate: 进行数学计算
-        - get_weather: 查询天气
-        - search_web: 搜索网络信息
+                "content": """你是一个智能助手 Agent，可以帮用户完成各种任务。
+你有以下工具可以使用：
+- calculate: 进行数学计算
+- get_weather: 查询指定城市的天气
+- search_web: 搜索网络上的最新信息
 
-        使用工具时，只需要给出工具名称和参数。
-        完成任务后，给出最终答案。"""
+规则：
+1. 需要最新信息或不确定的内容，使用 search_web 搜索
+2. 涉及数学计算，使用 calculate
+3. 查询天气，使用 get_weather
+4. 根据用户的语言回答，用户用中文就用中文，用英文就用英文，用其他语言也跟着用
+5. 直接给出有用的答案，不要拒绝正常的问题"""
             }
         ]
-
         messages.extend(history)
         messages.append({"role": "user", "content": request.task})
 
-        # 流式输出每个字
-        for chunk in llm_service.chat_stream(messages):
-            yield chunk
+        # 工具调用循环
+        for iteration in range(10):
+            response = llm_service.chat_with_tools(
+                messages=messages,
+                tools=tool_service.get_tools_for_llm()
+            )
+
+            # 没有工具调用 → 用流式输出最终答案
+            if not response["tool_calls"]:
+                # 把之前的思考内容加进去，流式输出最终回答
+                final_messages = messages + []
+                if response["content"]:
+                    # 已经有答案了，直接流式输出
+                    for chunk in llm_service.chat_stream(final_messages):
+                        yield chunk
+                else:
+                    for chunk in llm_service.chat_stream(final_messages):
+                        yield chunk
+                break
+
+            # 有工具调用 → 执行工具
+            assistant_message = {
+                "role": "assistant",
+                "content": response["content"] or "",
+                "tool_calls": response["tool_calls"]
+            }
+            messages.append(assistant_message)
+
+            for tool_call in response["tool_calls"]:
+                tool_name = tool_call.function.name
+                tool_args = json.loads(tool_call.function.arguments)
+
+                try:
+                    tool_result = tool_service.execute(tool_name, tool_args)
+                except Exception as e:
+                    tool_result = f"错误: {str(e)}"
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": str(tool_result)
+                })
 
     return StreamingResponse(generate(), media_type="text/plain")
-
 
 @router.get("/tools")
 async def list_tools():

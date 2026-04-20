@@ -63,15 +63,18 @@ class AgentExecutor:
         # 初始化消息列表
         messages = [
         {
-        "role": "system",
-        "content": """你是一个智能助手 Agent。
-        你可以使用以下工具来完成任务：
+      "content": """你是一个智能助手 Agent，可以帮用户完成各种任务。
+        你有以下工具可以使用：
         - calculate: 进行数学计算
-        - get_weather: 查询天气
-        - search_web: 搜索网络信息
+        - get_weather: 查询指定城市的天气
+        - search_web: 搜索网络上的最新信息
 
-        使用工具时，只需要给出工具名称和参数。
-        完成任务后，给出最终答案。"""
+        规则：
+        1. 需要最新信息或不确定的内容，使用 search_web 搜索
+        2. 涉及数学计算，使用 calculate
+        3. 查询天气，使用 get_weather
+        4. 根据用户的语言回答，用户用中文就用中文，用英文就用英文，用其他语言也跟着用
+        5. 直接给出有用的答案，不要拒绝正常的问题"""
             }
         ]
 
