@@ -50,21 +50,37 @@ class RAGService:
         logger.info(f"✅ 文档已添加: {file_name}，共 {len(chunks)} 个片段")
         return {"file": file_name, "chunks": len(chunks)}
     
-    def search(self, query: str, top_k: int = 3) -> List[str]:
+
+    def search(self, query: str, top_k: int = 3) -> List[dict]:
         """
-        搜索相关文档片段
+        搜索相关文档片段，附带相似度分数
         """
         query_embedding = self.model.encode(query).tolist()
         
         results = self.collection.query(
             query_embeddings=[query_embedding],
-            n_results=min(top_k, self.collection.count())
+            n_results=min(top_k, self.collection.count()),
+            include=["documents", "distances", "metadatas"]
         )
         
         if not results["documents"][0]:
             return []
         
-        return results["documents"][0]
+        output = []
+        for doc, distance, meta in zip(
+            results["documents"][0],
+            results["distances"][0],
+            results["metadatas"][0]
+        ):
+            # ChromaDB 返回的是距离（越小越相关），转成相似度百分比
+            similarity = round((1 - distance) * 100, 1)
+            output.append({
+                "content": doc,
+                "similarity": similarity,
+                "source": meta.get("source", "unknown")
+            })
+        
+        return output
     
     def list_documents(self) -> List[str]:
         """

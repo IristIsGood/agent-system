@@ -1,8 +1,7 @@
 """
 数据库配置
 """
-
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -57,6 +56,19 @@ class Message(Base):
 
     conversation = relationship("Conversation", back_populates="messages")
 
+# 调用统计表
+class CallLog(Base):
+    __tablename__ = "call_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    mode = Column(String)          # "chat", "plan", "multi"
+    prompt_tokens = Column(Integer, default=0)
+    completion_tokens = Column(Integer, default=0)
+    total_tokens = Column(Integer, default=0)
+    response_time = Column(Float, default=0)   # 秒
+    tools_used = Column(String, default="")    # "search_web,get_weather"
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 # 创建所有表
 def init_db():

@@ -41,6 +41,10 @@ app.include_router(auth_router)
 from backend.api.history_routes import router as history_router
 app.include_router(history_router)
 
+# ✅ Stats 路由
+from backend.api.stats_routes import router as stats_router
+app.include_router(stats_router)
+
 # ✅ Call init_services on startup
 @app.on_event("startup")
 async def startup_event():

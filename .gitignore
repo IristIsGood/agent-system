@@ -24,3 +24,10 @@ Thumbs.db
 # IDE Settings
 .vscode/
 .idea/
+
+agent.db
+chroma_db/
+uploads/
+node_modules/
+build/
+*.tar.gz

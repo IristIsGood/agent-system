@@ -62,22 +62,14 @@ class AgentExecutor:
         
         # 初始化消息列表
         messages = [
-        {
-      "content": """你是一个智能助手 Agent，可以帮用户完成各种任务。
-        你有以下工具可以使用：
-        - calculate: 进行数学计算
-        - get_weather: 查询指定城市的天气
-        - search_web: 搜索网络上的最新信息
-
-        规则：
-        1. 需要最新信息或不确定的内容，使用 search_web 搜索
-        2. 涉及数学计算，使用 calculate
-        3. 查询天气，使用 get_weather
-        4. 根据用户的语言回答，用户用中文就用中文，用英文就用英文，用其他语言也跟着用
-        5. 直接给出有用的答案，不要拒绝正常的问题"""
+            {
+                "role": "system",
+                "content": "You are a helpful AI Agent. You can use tools to complete tasks. Use search_web for current information, calculate for math, and get_weather for weather. Reply in the same language as the user."
             }
         ]
-
+    
+        # 过滤掉 role 为空的消息
+        history = [m for m in history if m.get("role") and m.get("content")]
         # 加入历史记录
         messages.extend(history)
 

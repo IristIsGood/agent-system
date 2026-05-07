@@ -6,6 +6,7 @@ import logging
 from typing import Callable, Dict, Any, Optional, List
 import json
 
+
 logger = logging.getLogger(__name__)
 
 class Tool:
@@ -121,20 +122,22 @@ def calculate(operation: str, a: float, b: float) -> float:
 
 
 def get_weather(city: str) -> str:
-    """天气查询工具（模拟）"""
-    # 这里是模拟数据，实际应该调用真实天气 API
-    weather_data = {
-        "北京": "晴天，20°C",
-        "上海": "多云，18°C",
-        "深圳": "雨天，25°C",
-    }
-    return weather_data.get(city, f"{city} 的天气信息暂不可用")
+    """天气查询工具（真实）"""
+    try:
+        import requests
+        url = f"https://wttr.in/{city}?format=3&lang=en"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            return response.text.strip()
+        return f"Weather info for {city} is unavailable"
+    except Exception as e:
+        return f"Weather query failed: {str(e)}"
 
 
 def search_web(query: str) -> str:
     """网页搜索工具（真实）"""
     try:
-        from duckduckgo_search import DDGS
+        from ddgs import DDGS
         with DDGS() as ddgs:
             results = list(ddgs.text(query, max_results=3))
         if not results:

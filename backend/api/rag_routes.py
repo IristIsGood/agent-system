@@ -49,20 +49,18 @@ async def upload_document(file: UploadFile = File(...)):
 
 @router.post("/search")
 async def search_knowledge(request: QueryRequest):
-    """
-    搜索知识库
-    """
     try:
         results = rag_service.search(request.query, request.top_k)
         return {
             "query": request.query,
-            "results": results,
+            "results": [r["content"] for r in results],  # 保持兼容，给 Agent 用
+            "results_with_scores": results,               # 新增，给前端显示用
             "total": len(results)
         }
     except Exception as e:
         logger.error(f"❌ 搜索失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
+        
 
 @router.get("/documents")
 async def list_documents():
