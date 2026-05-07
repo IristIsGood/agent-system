@@ -1,67 +1,80 @@
-# AI Agent System 🤖
+这份 README 已经非常专业且结构清晰。我为你进行了**排版优化**，增加了视觉引导符号、增强了代码块的可读性，并对技术架构部分进行了模块化处理，使其更符合 GitHub 高质量项目的文档标准。
 
-A full-stack AI Agent system with multi-turn conversation, tool calling, RAG knowledge base, and user authentication. Built with FastAPI and React.
+---
+
+# 🤖 AI Agent System
+
+A full-stack AI Agent system with **5 execution modes**, multi-agent collaboration, task planning, RAG knowledge base, real-time execution visualization, analytics dashboard, LangGraph integration, and MCP protocol support. Built with **FastAPI** and **React**.
+
+---
 
 ## 🎯 Problem & Solution
 
-* **Problem:** Most AI chatbots are stateless — they forget previous messages, can't access real-time data, and have no knowledge of your private documents.
-* **Solution:** A **full-stack Agentic System**. The agent maintains conversation history across sessions, autonomously decides when to call tools (search, calculate, weather), and can answer questions grounded in your uploaded documents via RAG.
+*   **Problem:** Most AI chatbots are stateless, single-agent, and opaque — they forget previous messages, can't access real-time data, have no knowledge of private documents, and give users no visibility into how answers are generated.
+*   **Solution:** A **full-stack Agentic System** with 5 execution modes. The agent maintains conversation history across sessions, autonomously decides when to call tools, coordinates multiple specialized agents for complex tasks, manages workflows via LangGraph, and exposes tools via MCP protocol.
+
+---
 
 ## 🏗️ Technical Architecture & Agentic Logic
 
-The system implements a **ReAct-style Agent Loop** at its core:
+The system implements multiple agentic patterns, selectable per message:
 
-1. **The Agent Executor:** Receives the user task and full conversation history. Calls the LLM with available tools and decides whether to act or respond.
-2. **Tool Calling Loop:** If the LLM decides to use a tool, the executor calls it, feeds the result back to the LLM, and iterates — up to a maximum of **10 iterations**.
-3. **RAG Pipeline:** On demand, the system retrieves the top $k = 3$ relevant chunks from a local **ChromaDB** instance using `sentence-transformers` embeddings, and injects them as context before the LLM generates a response.
-4. **Streaming Response:** Once all tool calls are resolved, the final answer is streamed token-by-token to the frontend for a real-time typing effect.
-5. **Session Persistence:** Every message is saved to a **SQLite** database, tied to an authenticated user, so conversations survive page refreshes and re-logins.
+1.  **The Agent Executor (Default):** Runs a custom **ReAct loop**. It calls the LLM with available tools, executes them, feeds results back, and iterates up to **10 iterations**.
+2.  **Task Planner:** Decomposes complex tasks into 2–5 typed subtasks (`search` / `weather` / `calculate` / `answer`), executes each in sequence, and streams results with real-time step visualization.
+3.  **Multi-Agent Orchestration:** An Orchestrator assigns tasks to specialized agents:
+    *   `ResearchAgent`: Web search + summarization.
+    *   `AnalysisAgent`: Data analysis + insights.
+    *   `WeatherAgent`: Real-time weather updates.
+4.  **LangGraph Agent:** Implemented as a `StateGraph`:  
+    `[LLM Node]` → *conditional edge* → `[Tool Node]` → `[LLM Node]` or `[END]`.
+5.  **MCP (Model Context Protocol):** Tools are exposed in MCP-compliant format, making them consumable by any MCP-compatible client (Claude Desktop, Cursor, etc.).
+6.  **RAG Pipeline:** Retrieves top $k = 3$ chunks from a local **ChromaDB** using `all-MiniLM-L6-v2` embeddings, returning similarity scores and grounding context.
+7.  **Streaming Response:** Uses **SSE (Server-Sent Events)** with newline-delimited JSON events (`status`, `tasks`, `executing`, `done`, `chunk`).
+8.  **Session Persistence:** Every message is saved to **SQLite**, tied to an authenticated user via JWT.
+
+---
 
 ## ✨ Key Features
 
-* **Multi-turn Memory:** Full conversation history is passed to the LLM on every request.
-* **Tool Calling:** Agent autonomously uses real web search (DuckDuckGo), math calculator, and weather lookup.
-* **RAG Knowledge Base:** Upload PDF or TXT/Markdown files; the agent answers questions grounded in your documents.
-* **Streaming Output:** Token-by-token streaming with tool execution happening silently before the final answer streams.
-* **User Authentication:** JWT-based register/login with bcrypt password hashing.
-* **Conversation History:** Full persistence in SQLite — browse, load, and delete past conversations.
-* **Auto-generated Titles:** Conversation titles are generated automatically from the first message.
+*   **5 Agent Modes:** Default, Task Planning, Multi-Agent, LangGraph, MCP.
+*   **Real-time Visualization:** Live step status (Pending ➔ Running ➔ Done).
+*   **Built-in Tooling:** DuckDuckGo Search, wttr.in Weather, Math Calculator.
+*   **RAG Knowledge Base:** Upload PDF/TXT/Markdown with similarity score display.
+*   **Multi-turn Memory:** Full persistent conversation history.
+*   **Analytics Dashboard:** Track calls, tokens, estimated cost, and mode distribution.
+*   **User Auth:** Secure JWT register/login with bcrypt.
+*   **Management:** Auto-generated titles and full conversation CRUD.
+
+---
 
 ## 🛠️ Tech Stack
 
-**Backend**
-* **Framework:** FastAPI + Uvicorn
-* **Agent Logic:** Custom ReAct loop with OpenAI Function Calling
-* **LLM:** OpenAI (`gpt-4`)
-* **Vector Store:** ChromaDB (local persistence)
-* **Embeddings:** `sentence-transformers` (`all-MiniLM-L6-v2`)
-* **Database:** SQLite via SQLAlchemy
-* **Auth:** JWT (`python-jose`) + bcrypt (`passlib`)
-* **Search Tool:** DuckDuckGo (`duckduckgo-search`)
+| Component | Technology |
+| :--- | :--- |
+| **Backend Framework** | FastAPI + Uvicorn |
+| **Agent Framework** | LangGraph + LangChain |
+| **LLM** | OpenAI (`gpt-4`) |
+| **Vector Store** | ChromaDB (Local) |
+| **Embeddings** | `sentence-transformers` (`all-MiniLM-L6-v2`) |
+| **Database** | SQLite via SQLAlchemy |
+| **Auth** | JWT (`python-jose`) + bcrypt |
+| **Frontend** | React + Axios |
 
-**Frontend**
-* **Framework:** React
-* **HTTP:** Axios + Fetch API (streaming)
-* **Routing:** React Router DOM
+---
 
 ## 🚀 Getting Started
 
 ### 1. Clone & Environment Setup
-
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/IristIsGood/agent-system.git
 cd agent-system
-
 python3 -m venv .venv
 source .venv/bin/activate
-
 pip install -r backend/requirements.txt
 ```
 
 ### 2. Configuration
-
 Create a `.env` file in the `backend/` directory:
-
 ```env
 OPENAI_API_KEY=sk-your-key-here
 MODEL_TYPE=gpt-4
@@ -69,27 +82,51 @@ MAX_ITERATIONS=10
 ```
 
 ### 3. Run the Backend
-
 ```bash
 cd backend
-uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000  
+python app/main.py
 ```
 
 ### 4. Run the Frontend
-
 ```bash
 cd frontend
 npm install
 npm start
 ```
+Open `http://localhost:3000` to register and start.
 
-Open `http://localhost:3000` — register an account and start chatting.
+---
 
 ## 🔑 Key Technical Decisions
 
-* **Custom Agent Loop over LangChain:** Built the ReAct loop from scratch to maintain full visibility and control over tool execution, message formatting, and iteration logic — without the abstraction overhead of a framework.
-* **Streaming After Tool Resolution:** Tool calls are executed synchronously first (required by the OpenAI API), then the final answer is streamed. This gives users real-time feedback while ensuring tool results are fully grounded in the response.
-* **SQLite for Simplicity:** Chose SQLite over PostgreSQL for zero-setup local development. The SQLAlchemy ORM makes migrating to PostgreSQL trivial when scaling.
-* **Separate `/execute` and `/stream` Endpoints:** `/execute` handles raw agent tasks (used internally and for testing), while `/stream` runs the full tool loop and then streams the final answer — separating concerns cleanly.
+*   **Separation of Concerns:** 5 modes are mapped to 5 distinct endpoints (`/stream`, `/plan`, etc.), making the system modular.
+*   **Hybrid Logic:** Built the ReAct loop from scratch first for deep understanding, then implemented LangGraph for production-grade state management.
+*   **Protocol Standards:** Adopted **MCP** to ensure tools are future-proof and compatible with external AI ecosystems.
+*   **UI/UX Synchronicity:** OpenAI requires synchronous tool calls; we bridge this by using SSE to update the UI on tool status before streaming the final text chunk.
+
+---
 
 ## 📁 Project Structure
+
+```text
+agent-system/
+├── backend/
+│   ├── app/main.py              # FastAPI entry point
+│   ├── api/                     # Route definitions (Auth, Agent, RAG, Stats)
+│   ├── core/                    # Core Logic (ReAct, LangGraph, Multi-Agent, Planner)
+│   ├── services/                # LLM, Tool, and RAG services
+│   └── mcp_server.py            # MCP implementation
+└── frontend/
+    └── src/
+        ├── App.js               # Main Chat Interface
+        ├── Login.js             # Auth Page
+        └── Dashboard.js         # Analytics
+```
+
+---
+
+## 🛡️ License
+MIT
+
+## 👤 Developer
+**Irist** — Building full-stack AI Agent systems from scratch.
