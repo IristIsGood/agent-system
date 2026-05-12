@@ -48,11 +48,9 @@ class LLMService:
             
             result = response.choices[0].message.content
             logger.info(f"✅ LLM 回复成功，tokens: {response.usage.total_tokens}")
-            return result, {
-                "prompt_tokens": response.usage.prompt_tokens,
-                "completion_tokens": response.usage.completion_tokens,
-                "total_tokens": response.usage.total_tokens
-            }
+            result = response.choices[0].message.content
+            logger.info(f"✅ LLM 回复成功，tokens: {response.usage.total_tokens}")
+            return result
             
         except Exception as e:
             logger.error(f"❌ LLM 调用失败: {str(e)}")
