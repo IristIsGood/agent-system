@@ -4,10 +4,9 @@ RAG 服务 - 知识库管理
 
 import os
 import logging
-import re
 from typing import List, Dict, Any
 import chromadb
-from openai import OpenAI
+from sentence_transformers import SentenceTransformer
 import pypdf
 import markdown
 
@@ -17,22 +16,29 @@ class RAGService:
     
     def __init__(self):
         """初始化 RAG 服务"""
+        # 初始化向量数据库
         self.client = chromadb.PersistentClient(path="./chroma_db")
         self.collection = self.client.get_or_create_collection("knowledge_base")
-        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        logger.info("✅ RAG 服务初始化成功（使用 OpenAI embedding）")
+        
+        # 初始化 embedding 模型
+        logger.info("⏳ 加载 embedding 模型...")
+        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        logger.info("✅ RAG 服务初始化成功")
     
     def add_document(self, file_path: str, file_name: str) -> Dict[str, Any]:
-        """添加文档到知识库"""
+        """
+        添加文档到知识库
+        """
+        # 读取文件内容
         content = self._read_file(file_path, file_name)
+        
+        # 切割成小块
         chunks = self._split_text(content)
         
+        # 生成向量并存储
         for i, chunk in enumerate(chunks):
             doc_id = f"{file_name}_{i}"
-            embedding = self.openai_client.embeddings.create(
-                input=chunk,
-                model="text-embedding-3-small"
-            ).data[0].embedding
+            embedding = self.model.encode(chunk).tolist()
             
             self.collection.add(
                 ids=[doc_id],
@@ -44,12 +50,12 @@ class RAGService:
         logger.info(f"✅ 文档已添加: {file_name}，共 {len(chunks)} 个片段")
         return {"file": file_name, "chunks": len(chunks)}
     
+
     def search(self, query: str, top_k: int = 3) -> List[dict]:
-        """搜索相关文档片段，附带相似度分数"""
-        query_embedding = self.openai_client.embeddings.create(
-            input=query,
-            model="text-embedding-3-small"
-        ).data[0].embedding
+        """
+        搜索相关文档片段，附带相似度分数
+        """
+        query_embedding = self.model.encode(query).tolist()
         
         results = self.collection.query(
             query_embeddings=[query_embedding],
@@ -66,6 +72,7 @@ class RAGService:
             results["distances"][0],
             results["metadatas"][0]
         ):
+            # ChromaDB 返回的是距离（越小越相关），转成相似度百分比
             similarity = round((1 - distance) * 100, 1)
             output.append({
                 "content": doc,
@@ -76,7 +83,9 @@ class RAGService:
         return output
     
     def list_documents(self) -> List[str]:
-        """列出所有已上传的文档"""
+        """
+        列出所有已上传的文档
+        """
         results = self.collection.get()
         sources = set()
         for meta in results["metadatas"]:
@@ -94,10 +103,12 @@ class RAGService:
         elif ext in ["md", "markdown"]:
             with open(file_path, "r", encoding="utf-8") as f:
                 md_content = f.read()
+            # 转成纯文本
             html = markdown.markdown(md_content)
+            import re
             return re.sub(r"<[^>]+>", "", html)
         
-        else:
+        else:  # txt 等纯文本
             with open(file_path, "r", encoding="utf-8") as f:
                 return f.read()
     
