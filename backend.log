@@ -1,0 +1,31 @@
+2026-05-12 10:55:55,038 - backend.services.tool_service - INFO - ✅ ToolService 初始化成功
+2026-05-12 10:55:55,038 - backend.services.tool_service - INFO - ✅ 工具定义成功: calculate
+2026-05-12 10:55:55,038 - backend.services.tool_service - INFO - ✅ 工具已注册: calculate
+2026-05-12 10:55:55,038 - backend.services.tool_service - INFO - ✅ 工具定义成功: get_weather
+2026-05-12 10:55:55,038 - backend.services.tool_service - INFO - ✅ 工具已注册: get_weather
+2026-05-12 10:55:55,038 - backend.services.tool_service - INFO - ✅ 工具定义成功: search_web
+2026-05-12 10:55:55,038 - backend.services.tool_service - INFO - ✅ 工具已注册: search_web
+2026-05-12 10:55:55,038 - backend.services.tool_service - INFO - ✅ 已注册 3 个内置工具
+/Users/irist/agent-system/.venv/lib/python3.12/site-packages/langgraph/cache/base/__init__.py:8: LangChainPendingDeprecationWarning: The default value of `allowed_objects` will change in a future version. Pass an explicit value (e.g., allowed_objects='messages' or allowed_objects='core') to suppress this warning.
+  from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+2026-05-12 10:56:10,914 - backend.services.rag_service - INFO - ✅ RAG 服务初始化成功（使用 OpenAI embedding）
+INFO:     Started server process [8432]
+INFO:     Waiting for application startup.
+2026-05-12 10:56:11,710 - backend.services.llm_service - INFO - ✅ LLMService 初始化成功，使用模型: gpt-4
+2026-05-12 10:56:11,710 - backend.core.agent_executor - INFO - ✅ AgentExecutor 初始化成功
+2026-05-12 10:56:11,710 - backend.core.task_planner - INFO - ✅ TaskPlanner 初始化成功
+2026-05-12 10:56:11,710 - backend.core.multi_agent - INFO - ✅ Agent 初始化: ResearchAgent
+2026-05-12 10:56:11,710 - backend.core.multi_agent - INFO - ✅ Agent 初始化: AnalysisAgent
+2026-05-12 10:56:11,710 - backend.core.multi_agent - INFO - ✅ Agent 初始化: WeatherAgent
+2026-05-12 10:56:11,710 - backend.core.multi_agent - INFO - ✅ Agent 初始化: Orchestrator
+2026-05-12 10:56:11,710 - backend.core.multi_agent - INFO - ✅ MultiAgentSystem 初始化，共 3 个 Agent
+2026-05-12 10:56:12,001 - backend.core.langgraph_agent - INFO - ✅ LangGraph Agent 创建成功
+2026-05-12 10:56:12,002 - backend.core.langgraph_agent - INFO - ✅ LangGraphAgentExecutor 初始化成功
+2026-05-12 10:56:12,002 - backend.core.mcp_client - INFO - ✅ MCPClient 初始化，Server: /Users/irist/agent-system/backend/mcp_server.py
+2026-05-12 10:56:12,002 - backend.core.mcp_client - INFO - ✅ MCPAgentExecutor 初始化成功
+2026-05-12 10:56:12,002 - backend.api.agent_routes - INFO - ✅ 所有服务初始化成功
+2026-05-12 10:56:12,003 - backend.app.main - INFO - ✅ 数据库初始化成功
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63190 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63512 - "GET /health HTTP/1.1" 200 OK
